@@ -10,11 +10,14 @@ contract SmartBank {
 
    
     mapping(address=>uint)balances;
+    mapping(address=> uint) timeStamps;
     
 
     // add money to contract 
     function addMoney() public payable {
         balances[msg.sender] = msg.value;
         totalContractBalance = totalContractBalance + msg.value;
+       timeStamps[msg.sender] = block.timestamp; 
+        
     }
 }
