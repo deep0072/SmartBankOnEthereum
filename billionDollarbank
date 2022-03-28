@@ -1,0 +1,60 @@
+pragma solidity >= 0.7.0 <0.9.0 ;
+
+contract SmartBank {
+    uint totalContractBalance = 0;
+
+    function getContractBalance() public view returns(uint){
+        return totalContractBalance;
+    }
+
+
+   
+    mapping(address=>uint)balances;
+
+    mapping(address=> uint) timeStamps;
+    
+
+    // add money to contract 
+    function addMoney() public payable {
+        balances[msg.sender] = msg.value;
+        totalContractBalance = totalContractBalance + msg.value;
+        timeStamps[msg.sender] = block.timestamp;  // block.timestamp is the time of execution of batched functions 
+    }
+
+
+    // interest on depostied money
+
+    function getBalance(address user) public view returns(uint){
+        //get the principle amount with help of address
+
+        uint principle = balances[user];
+        uint timeElapsed = block.timestamp - timeStamps[user];
+
+        return principle + uint((principle * 7 * timeElapsed)/(100 * 365 * 24 * 60 * 60 )) + 1;
+        
+    }
+
+
+    // withdraw moeny from smartbank. who will deposit the money need to right to wthdraw
+
+    function withDraw() public payable {
+        address payable withDrawto = payable(msg.sender); // here address or account to which money will be deposited
+        uint amountoTransfer = getBalance(msg.sender); // get the money with its interest
+
+        withDrawto.transfer(amountoTransfer);
+        totalContractBalance = totalContractBalance-amountoTransfer;
+        balances[msg.sender] = 0;
+    }
+
+
+    // add money for reserve to smart contract
+
+    function addMoeny()public payable{
+
+        totalContractBalance = totalContractBalance + msg.value;
+
+
+
+    }
+
+}
