@@ -35,7 +35,7 @@ contract SmartBank {
     }
 
 
-    // withdraw moeny from smartbank. who will deposit the money need to right to wthdraw
+    // withdraw moeny from smartbank. who will deposit the money should have right to wthdraw
 
     function withDraw() public payable {
         address payable withDrawto = payable(msg.sender); // here address or account to which money will be deposited
