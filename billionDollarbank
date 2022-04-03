@@ -1,60 +1,94 @@
-pragma solidity >= 0.7.0 <0.9.0 ;
+pragma solidity >=0.7.0 <0.9.0;
 
-contract SmartBank {
+
+interface cETH {
+    
+    // define functions of COMPOUND we'll be using
+    
+    function mint() external payable; // to deposit to compound
+    function redeem(uint redeemTokens) external returns (uint); // to withdraw from compound
+    
+    //following 2 functions to determine how much you'll be able to withdraw
+    function exchangeRateStored() external view returns (uint); 
+    function balanceOf(address owner) external view returns (uint256 balance);
+}
+
+
+contract SmartBankAccount {
+
+
     uint totalContractBalance = 0;
+    
+    address COMPOUND_CETH_ADDRESS = 0x859e9d8a4edadfEDb5A2fF311243af80F85A91b8;
+    cETH ceth = cETH(COMPOUND_CETH_ADDRESS);
 
     function getContractBalance() public view returns(uint){
         return totalContractBalance;
     }
+    
+    mapping(address => uint) balances;
+    mapping(address => uint) depositTimestamps;
+    
+    function addBalance () public payable {
+        _mint(msg.value);
+    }
 
 
-   
-    mapping(address=>uint)balances;
+    // function to mint the amount of extra eth on compound smart contract
+    function _mint(uint amountofEth) internal {
 
-    mapping(address=> uint) timeStamps;
+        uint256 amountOfethbeforeMinting = ceth.balanceOf(address(this));
+        
+        // mint started sending eth to smart compound in exhange will get the ceth
+        ceth.mint{value:amountofEth}();
+
+        uint256 amountOfethAfterMinting = ceth.balanceOf(address(this));
+
+        uint CethOfuser = amountOfethAfterMinting - amountOfethbeforeMinting;
+
+        totalContractBalance == CethOfuser;
+        balances[msg.sender] = CethOfuser; // it is the no of ceth owned by user
+
+
+    }
     
 
-    // add money to contract 
-    function addMoney() public payable {
-        balances[msg.sender] = msg.value;
-        totalContractBalance = totalContractBalance + msg.value;
-        timeStamps[msg.sender] = block.timestamp;  // block.timestamp is the time of execution of batched functions 
+
+    // getting total balance with interest
+
+    function getBalance(address _add) public view returns(uint256) {
+        return balances[_add] * ceth.exchangeRateStored() / 1e18; // getting eth balance 
+
+    }
+    
+
+    // getting extra ceth or kind of interest on deposited amount
+    function cethBalance(address _add) public view returns(uint){
+        return balances[_add];
     }
 
 
-    // interest on depostied money
+    // withdraw amount
 
-    function getBalance(address user) public view returns(uint){
-        //get the principle amount with help of address
+    function withdrawMax() public payable {
 
-        uint principle = balances[user];
-        uint timeElapsed = block.timestamp - timeStamps[user];
+        address payable transferTo= payable(msg.sender); // get the recipent add make it payable
 
-        return principle + uint((principle * 7 * timeElapsed)/(100 * 365 * 24 * 60 * 60 )) + 1;
-        
-    }
+        ceth.redeem(balances[msg.sender]); // here we are redeeming the whole amount of ether in exchange of ceth;
 
+        uint amountTotransfer = getBalance(msg.sender); // get the whole balance to withdraw
+        totalContractBalance -= balances[msg.sender];
 
-    // withdraw moeny from smartbank. who will deposit the money should have right to wthdraw
-
-    function withDraw() public payable {
-        address payable withDrawto = payable(msg.sender); // here address or account to which money will be deposited
-        uint amountoTransfer = getBalance(msg.sender); // get the money with its interest
-
-        withDrawto.transfer(amountoTransfer);
-        totalContractBalance = totalContractBalance-amountoTransfer;
         balances[msg.sender] = 0;
-    }
+        transferTo.transfer(amountTotransfer); // tranfer the ether whoever is calling this function
 
 
-    // add money for reserve to smart contract
-
-    function addMoeny()public payable{
-
-        totalContractBalance = totalContractBalance + msg.value;
 
 
+
+ 
+       
 
     }
-
+    
 }
